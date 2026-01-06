@@ -108,47 +108,6 @@ src/
 - **Mobile**: Card-based layout for products, stacked layout for orders
 - Uses Tailwind breakpoints: `sm`, `md`, `lg`
 
-## 🚢 Deployment
-
-### Deploy to Vercel
-
-1. Install Vercel CLI (if not already installed):
-```bash
-npm i -g vercel
-```
-
-2. Build the project:
-```bash
-npm run build
-```
-
-3. Deploy:
-```bash
-vercel
-```
-
-Or connect your GitHub repository to Vercel for automatic deployments.
-
-### Deploy to Netlify
-
-1. Install Netlify CLI (if not already installed):
-```bash
-npm i -g netlify-cli
-```
-
-2. Build the project:
-```bash
-npm run build
-```
-
-3. Deploy:
-```bash
-netlify deploy --prod --dir=dist
-```
-
-Or connect your GitHub repository to Netlify and set:
-- **Build command**: `npm run build`
-- **Publish directory**: `dist`
 
 ## 📝 Available Scripts
 
@@ -171,7 +130,6 @@ This project is open source and available under the MIT License.
 
 ## 🎨 Live Demo
 
-[Add your deployed URL here after deployment]
 
 Example:
 - Vercel: `https://ecoratings-admin.vercel.app`
