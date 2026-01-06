@@ -1,0 +1,112 @@
+[
+  {
+    "id": "1",
+    "customerName": "John Doe",
+    "items": [
+      { "productId": "1", "name": "Organic Cotton T-Shirt", "price": 29.99, "quantity": 2 },
+      { "productId": "2", "name": "Bamboo Water Bottle", "price": 24.99, "quantity": 1 }
+    ],
+    "total": 84.97,
+    "status": "Completed",
+    "createdAt": "2024-12-01T08:30:00Z"
+  },
+  {
+    "id": "2",
+    "customerName": "Jane Smith",
+    "items": [
+      { "productId": "3", "name": "Recycled Paper Notebook", "price": 12.99, "quantity": 3 },
+      { "productId": "9", "name": "Reusable Shopping Bag", "price": 5.99, "quantity": 2 }
+    ],
+    "total": 49.95,
+    "status": "Pending",
+    "createdAt": "2024-12-02T10:15:00Z"
+  },
+  {
+    "id": "3",
+    "customerName": "Bob Johnson",
+    "items": [
+      { "productId": "4", "name": "Solar Power Bank", "price": 49.99, "quantity": 1 }
+    ],
+    "total": 49.99,
+    "status": "Completed",
+    "createdAt": "2024-12-02T14:20:00Z"
+  },
+  {
+    "id": "4",
+    "customerName": "Alice Williams",
+    "items": [
+      { "productId": "5", "name": "Hemp Backpack", "price": 79.99, "quantity": 1 },
+      { "productId": "11", "name": "Bamboo Toothbrush", "price": 6.99, "quantity": 4 }
+    ],
+    "total": 107.95,
+    "status": "Pending",
+    "createdAt": "2024-12-03T09:45:00Z"
+  },
+  {
+    "id": "5",
+    "customerName": "Charlie Brown",
+    "items": [
+      { "productId": "8", "name": "Organic Coffee Beans", "price": 18.99, "quantity": 2 },
+      { "productId": "6", "name": "Eco-Friendly Soap", "price": 8.99, "quantity": 5 }
+    ],
+    "total": 82.93,
+    "status": "Completed",
+    "createdAt": "2024-12-03T16:30:00Z"
+  },
+  {
+    "id": "6",
+    "customerName": "Diana Prince",
+    "items": [
+      { "productId": "10", "name": "LED Energy Saver Bulb", "price": 14.99, "quantity": 6 }
+    ],
+    "total": 89.94,
+    "status": "Cancelled",
+    "createdAt": "2024-12-04T11:00:00Z"
+  },
+  {
+    "id": "7",
+    "customerName": "Edward Norton",
+    "items": [
+      { "productId": "1", "name": "Organic Cotton T-Shirt", "price": 29.99, "quantity": 1 },
+      { "productId": "2", "name": "Bamboo Water Bottle", "price": 24.99, "quantity": 2 },
+      { "productId": "3", "name": "Recycled Paper Notebook", "price": 12.99, "quantity": 1 }
+    ],
+    "total": 92.96,
+    "status": "Pending",
+    "createdAt": "2024-12-04T13:20:00Z"
+  },
+  {
+    "id": "8",
+    "customerName": "Fiona Green",
+    "items": [
+      { "productId": "4", "name": "Solar Power Bank", "price": 49.99, "quantity": 1 },
+      { "productId": "5", "name": "Hemp Backpack", "price": 79.99, "quantity": 1 }
+    ],
+    "total": 129.98,
+    "status": "Completed",
+    "createdAt": "2024-12-05T08:10:00Z"
+  },
+  {
+    "id": "9",
+    "customerName": "George Lucas",
+    "items": [
+      { "productId": "6", "name": "Eco-Friendly Soap", "price": 8.99, "quantity": 10 },
+      { "productId": "11", "name": "Bamboo Toothbrush", "price": 6.99, "quantity": 5 }
+    ],
+    "total": 133.85,
+    "status": "Pending",
+    "createdAt": "2024-12-05T15:45:00Z"
+  },
+  {
+    "id": "10",
+    "customerName": "Helen Troy",
+    "items": [
+      { "productId": "8", "name": "Organic Coffee Beans", "price": 18.99, "quantity": 3 },
+      { "productId": "9", "name": "Reusable Shopping Bag", "price": 5.99, "quantity": 4 }
+    ],
+    "total": 77.93,
+    "status": "Completed",
+    "createdAt": "2024-12-06T10:30:00Z"
+  }
+]
+
