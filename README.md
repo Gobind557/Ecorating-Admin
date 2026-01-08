@@ -132,8 +132,8 @@ This project is open source and available under the MIT License.
 
 
 Example:
-- Vercel: `https://ecoratings-admin.vercel.app`
-- Netlify: `https://ecoratings-admin.netlify.app`
+- Vercel: `https://ecorating-admin.vercel.app`
+
 
 ---
 
