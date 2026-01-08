@@ -1,21 +1,33 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { fetchProducts, createProduct, updateProduct, deleteProduct, toggleProductStatus } from '../store/productsSlice';
-import type { Product } from '../types';
-import { useDebounce } from '../hooks/useDebounce';
-import { useFilters } from '../hooks/useFilters';
-import { useSort } from '../hooks/useSort';
-import { usePagination } from '../hooks/usePagination';
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import {
+  fetchProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  toggleProductStatus,
+} from "../store/productsSlice";
+import type { Product } from "../types";
+import { useDebounce } from "../hooks/useDebounce";
+import { useFilters } from "../hooks/useFilters";
+import { useSort } from "../hooks/useSort";
+import { usePagination } from "../hooks/usePagination";
 
 export default function Products() {
   const dispatch = useAppDispatch();
-  const { items: products, loading } = useAppSelector((state) => state.products);
+  const { items: products, loading } = useAppSelector(
+    (state) => state.products
+  );
 
-  const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('All');
-  const [statusFilter, setStatusFilter] = useState<'Active' | 'Inactive' | 'All'>('All');
-  const [sortField, setSortField] = useState<'price' | 'updatedAt' | null>(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState<
+    "Active" | "Inactive" | "All"
+  >("All");
+  const [sortField, setSortField] = useState<"price" | "updatedAt" | null>(
+    null
+  );
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -23,14 +35,18 @@ export default function Products() {
   const debouncedSearch = useDebounce(search, 300);
 
   useEffect(() => {
-    if (products.length === 0) {
+    // Only fetch from JSON if we don't have persisted data
+    // This prevents overwriting rehydrated state from localStorage
+    const hasPersisted = localStorage.getItem("reduxState") !== null;
+
+    if (products.length === 0 && !hasPersisted) {
       dispatch(fetchProducts());
     }
   }, [dispatch, products.length]);
 
   // Get unique categories
   const categories = useMemo(() => {
-    const cats = products.map(p => p.category);
+    const cats = products.map((p) => p.category);
     return Array.from(new Set(cats)).sort();
   }, [products]);
 
@@ -58,14 +74,17 @@ export default function Products() {
     hasPrevPage,
   } = usePagination(sortedProducts, 10);
 
-  const handleSort = useCallback((field: 'price' | 'updatedAt') => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  }, [sortField, sortDirection]);
+  const handleSort = useCallback(
+    (field: "price" | "updatedAt") => {
+      if (sortField === field) {
+        setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+      } else {
+        setSortField(field);
+        setSortDirection("asc");
+      }
+    },
+    [sortField, sortDirection]
+  );
 
   const handleEdit = useCallback((product: Product) => {
     setEditingProduct(product);
@@ -79,98 +98,153 @@ export default function Products() {
     setShowModal(true);
   }, []);
 
-  const handleDelete = useCallback(async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      await dispatch(deleteProduct(id));
-    }
-  }, [dispatch]);
+  const handleDelete = useCallback(
+    async (id: string) => {
+      const product = products.find((p) => p.id === id);
+      if (!product) return;
 
-  const handleToggleStatus = useCallback((id: string) => {
-    dispatch(toggleProductStatus(id));
-  }, [dispatch]);
+      const isActive = product.status === "Active";
+      const message = isActive
+        ? "This will deactivate the product. Delete again to permanently remove it."
+        : "Are you sure you want to permanently delete this product?";
 
-  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const productData = {
-      name: formData.get('name') as string,
-      description: formData.get('description') as string,
-      price: parseFloat(formData.get('price') as string),
-      stock: parseInt(formData.get('stock') as string),
-      category: formData.get('category') as string,
-      status: (formData.get('status') as 'Active' | 'Inactive') || 'Active',
-      rating: parseFloat(formData.get('rating') as string),
-    };
+      if (window.confirm(message)) {
+        await dispatch(deleteProduct(id));
+      }
+    },
+    [dispatch, products]
+  );
 
-    // Validation
-    if (productData.name.length < 3) {
-      alert('Name must be at least 3 characters');
-      return;
-    }
-    if (productData.price <= 0) {
-      alert('Price must be greater than 0');
-      return;
-    }
-    if (productData.stock < 0) {
-      alert('Stock must be 0 or greater');
-      return;
-    }
-    if (!productData.category) {
-      alert('Category is required');
-      return;
-    }
-    if (productData.rating < 1 || productData.rating > 5) {
-      alert('Rating must be between 1 and 5');
-      return;
-    }
+  const handleToggleStatus = useCallback(
+    (id: string) => {
+      dispatch(toggleProductStatus(id));
+    },
+    [dispatch]
+  );
 
-    if (isCreating) {
-      await dispatch(createProduct(productData));
-    } else if (editingProduct) {
-      await dispatch(updateProduct({ id: editingProduct.id, updates: productData }));
-    }
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const formData = new FormData(e.currentTarget);
+      const productData = {
+        name: formData.get("name") as string,
+        description: formData.get("description") as string,
+        price: parseFloat(formData.get("price") as string),
+        stock: parseInt(formData.get("stock") as string),
+        category: formData.get("category") as string,
+        status: (formData.get("status") as "Active" | "Inactive") || "Active",
+        rating: parseFloat(formData.get("rating") as string),
+      };
 
-    setShowModal(false);
-    setEditingProduct(null);
-    setIsCreating(false);
-  }, [dispatch, isCreating, editingProduct]);
+      // Validation
+      if (productData.name.length < 3) {
+        alert("Name must be at least 3 characters");
+        return;
+      }
+      if (productData.price <= 0) {
+        alert("Price must be greater than 0");
+        return;
+      }
+      if (productData.stock < 0) {
+        alert("Stock must be 0 or greater");
+        return;
+      }
+      if (!productData.category) {
+        alert("Category is required");
+        return;
+      }
+      if (productData.rating < 1 || productData.rating > 5) {
+        alert("Rating must be between 1 and 5");
+        return;
+      }
+
+      if (isCreating) {
+        await dispatch(createProduct(productData));
+      } else if (editingProduct) {
+        await dispatch(
+          updateProduct({ id: editingProduct.id, updates: productData })
+        );
+      }
+
+      setShowModal(false);
+      setEditingProduct(null);
+      setIsCreating(false);
+    },
+    [dispatch, isCreating, editingProduct]
+  );
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Products</h1>
+        <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
+          Products
+        </h1>
         <button
           onClick={handleCreate}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+          className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg flex items-center space-x-2 font-medium"
         >
-          + Create Product
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          <span>Create Product</span>
         </button>
       </div>
 
       {/* Filters and Search */}
-      <div className="bg-white rounded-lg shadow p-4 space-y-4">
+      <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <input
-            type="text"
-            placeholder="Search by name..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg
+                className="h-5 w-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder="Search by name..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            />
+          </div>
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
           >
             <option value="All">All Categories</option>
-            {categories.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
             ))}
           </select>
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as 'Active' | 'Inactive' | 'All')}
-            className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={(e) =>
+              setStatusFilter(e.target.value as "Active" | "Inactive" | "All")
+            }
+            className="border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
           >
             <option value="All">All Status</option>
             <option value="Active">Active</option>
@@ -178,20 +252,27 @@ export default function Products() {
           </select>
           <div className="flex gap-2">
             <button
-              onClick={() => handleSort('price')}
-              className={`px-4 py-2 rounded-lg border transition ${
-                sortField === 'price' ? 'bg-blue-100 border-blue-500' : 'border-gray-300'
+              onClick={() => handleSort("price")}
+              className={`px-4 py-2.5 rounded-lg border transition-all duration-200 font-medium ${
+                sortField === "price"
+                  ? "bg-blue-50 border-blue-500 text-blue-700 shadow-sm"
+                  : "border-gray-300 text-gray-700 hover:bg-gray-50"
               }`}
             >
-              Sort by Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
+              Sort by Price{" "}
+              {sortField === "price" && (sortDirection === "asc" ? "↑" : "↓")}
             </button>
             <button
-              onClick={() => handleSort('updatedAt')}
-              className={`px-4 py-2 rounded-lg border transition ${
-                sortField === 'updatedAt' ? 'bg-blue-100 border-blue-500' : 'border-gray-300'
+              onClick={() => handleSort("updatedAt")}
+              className={`px-4 py-2.5 rounded-lg border transition-all duration-200 font-medium ${
+                sortField === "updatedAt"
+                  ? "bg-blue-50 border-blue-500 text-blue-700 shadow-sm"
+                  : "border-gray-300 text-gray-700 hover:bg-gray-50"
               }`}
             >
-              Sort by Date {sortField === 'updatedAt' && (sortDirection === 'asc' ? '↑' : '↓')}
+              Sort by Date{" "}
+              {sortField === "updatedAt" &&
+                (sortDirection === "asc" ? "↑" : "↓")}
             </button>
           </div>
         </div>
@@ -199,55 +280,89 @@ export default function Products() {
 
       {/* Products Table (Desktop) / Cards (Mobile) */}
       {loading ? (
-        <div className="text-center py-12">Loading...</div>
+        <div className="text-center py-20">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600 font-medium">Loading products...</p>
+        </div>
       ) : (
         <>
           {/* Desktop Table */}
-          <div className="hidden md:block bg-white rounded-lg shadow overflow-x-auto">
+          <div className="hidden md:block bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rating</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Category
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Price
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Stock
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Rating
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Actions
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-100">
                 {paginatedData.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">{product.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{product.category}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">${product.price.toFixed(2)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{product.stock}</td>
+                  <tr
+                    key={product.id}
+                    className="hover:bg-blue-50 transition-colors duration-150"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        product.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                      }`}>
+                      {product.name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {product.category}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      ${product.price.toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {product.stock}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs ${
+                          product.status === "Active"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
                         {product.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">{product.rating}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {product.rating}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleEdit(product)}
-                          className="text-blue-600 hover:text-blue-800"
+                          className="text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleToggleStatus(product.id)}
-                          className="text-yellow-600 hover:text-yellow-800"
+                          className="text-yellow-600 hover:text-yellow-800 font-medium px-2 py-1 rounded hover:bg-yellow-50 transition-colors"
                         >
                           Toggle
                         </button>
                         <button
                           onClick={() => handleDelete(product.id)}
-                          className="text-red-600 hover:text-red-800"
+                          className="text-red-600 hover:text-red-800 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors"
                         >
                           Delete
                         </button>
@@ -262,38 +377,58 @@ export default function Products() {
           {/* Mobile Cards */}
           <div className="md:hidden space-y-4">
             {paginatedData.map((product) => (
-              <div key={product.id} className="bg-white rounded-lg shadow p-4">
+              <div
+                key={product.id}
+                className="bg-white rounded-xl shadow-md border border-gray-100 p-5 hover:shadow-lg transition-shadow duration-200"
+              >
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-semibold text-lg">{product.name}</h3>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    product.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                  }`}>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs ${
+                      product.status === "Active"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-gray-100 text-gray-800"
+                    }`}
+                  >
                     {product.status}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600 mb-2">{product.description}</p>
+                <p className="text-sm text-gray-600 mb-2">
+                  {product.description}
+                </p>
                 <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-                  <div><span className="font-medium">Category:</span> {product.category}</div>
-                  <div><span className="font-medium">Price:</span> ${product.price.toFixed(2)}</div>
-                  <div><span className="font-medium">Stock:</span> {product.stock}</div>
-                  <div><span className="font-medium">Rating:</span> {product.rating}</div>
+                  <div>
+                    <span className="font-medium">Category:</span>{" "}
+                    {product.category}
+                  </div>
+                  <div>
+                    <span className="font-medium">Price:</span> $
+                    {product.price.toFixed(2)}
+                  </div>
+                  <div>
+                    <span className="font-medium">Stock:</span> {product.stock}
+                  </div>
+                  <div>
+                    <span className="font-medium">Rating:</span>{" "}
+                    {product.rating}
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleEdit(product)}
-                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm font-medium"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleToggleStatus(product.id)}
-                    className="flex-1 bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700"
+                    className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-4 py-2.5 rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all shadow-sm font-medium"
                   >
                     Toggle
                   </button>
                   <button
                     onClick={() => handleDelete(product.id)}
-                    className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+                    className="flex-1 bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-2.5 rounded-lg hover:from-red-700 hover:to-red-800 transition-all shadow-sm font-medium"
                   >
                     Delete
                   </button>
@@ -304,21 +439,21 @@ export default function Products() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2">
+            <div className="flex justify-center items-center gap-3 bg-white rounded-xl shadow-md border border-gray-100 p-4">
               <button
                 onClick={prevPage}
                 disabled={!hasPrevPage}
-                className="px-4 py-2 rounded-lg border disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-5 py-2.5 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors font-medium disabled:hover:bg-transparent"
               >
                 Previous
               </button>
-              <span className="px-4 py-2">
+              <span className="px-5 py-2.5 bg-blue-50 text-blue-700 rounded-lg font-semibold">
                 Page {currentPage} of {totalPages}
               </span>
               <button
                 onClick={nextPage}
                 disabled={!hasNextPage}
-                className="px-4 py-2 rounded-lg border disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-5 py-2.5 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors font-medium disabled:hover:bg-transparent"
               >
                 Next
               </button>
@@ -329,10 +464,10 @@ export default function Products() {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4 transform transition-all">
             <h2 className="text-2xl font-bold mb-4">
-              {isCreating ? 'Create Product' : 'Edit Product'}
+              {isCreating ? "Create Product" : "Edit Product"}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -340,74 +475,88 @@ export default function Products() {
                 <input
                   type="text"
                   name="name"
-                  defaultValue={editingProduct?.name || ''}
+                  defaultValue={editingProduct?.name || ""}
                   required
                   minLength={3}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
+                <label className="block text-sm font-medium mb-1">
+                  Description
+                </label>
                 <textarea
                   name="description"
-                  defaultValue={editingProduct?.description || ''}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  defaultValue={editingProduct?.description || ""}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
                   rows={3}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Price *</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Price *
+                  </label>
                   <input
                     type="number"
                     name="price"
                     step="0.01"
                     min="0.01"
-                    defaultValue={editingProduct?.price || ''}
+                    defaultValue={editingProduct?.price || ""}
                     required
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Stock *</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Stock *
+                  </label>
                   <input
                     type="number"
                     name="stock"
                     min="0"
-                    defaultValue={editingProduct?.stock || ''}
+                    defaultValue={editingProduct?.stock || ""}
                     required
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Category *</label>
+                <label className="block text-sm font-medium mb-1">
+                  Category *
+                </label>
                 <select
                   name="category"
-                  defaultValue={editingProduct?.category || ''}
+                  defaultValue={editingProduct?.category || ""}
                   required
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
                 >
                   <option value="">Select category</option>
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
                   ))}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Status</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Status
+                  </label>
                   <select
                     name="status"
-                    defaultValue={editingProduct?.status || 'Active'}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                    defaultValue={editingProduct?.status || "Active"}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
                   >
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Rating (1-5)</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Rating (1-5)
+                  </label>
                   <input
                     type="number"
                     name="rating"
@@ -416,7 +565,7 @@ export default function Products() {
                     step="0.1"
                     defaultValue={editingProduct?.rating || 4.0}
                     required
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
                 </div>
               </div>
@@ -428,15 +577,15 @@ export default function Products() {
                     setEditingProduct(null);
                     setIsCreating(false);
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="px-6 py-2.5 border-2 border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 font-medium shadow-md hover:shadow-lg transition-all"
                 >
-                  {isCreating ? 'Create' : 'Update'}
+                  {isCreating ? "Create" : "Update"}
                 </button>
               </div>
             </form>
@@ -446,4 +595,3 @@ export default function Products() {
     </div>
   );
 }
-

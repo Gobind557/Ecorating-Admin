@@ -39,9 +39,12 @@ export const updateProduct = createAsyncThunk(
 
 export const deleteProduct = createAsyncThunk(
   'products/delete',
-  async (id: string) => {
+  async (id: string, { getState }) => {
     await productsAPI.delete(id);
-    return id;
+    // Get current product status to determine soft vs hard delete
+    const state = getState() as { products: ProductsState };
+    const product = state.products.items.find(p => p.id === id);
+    return { id, currentStatus: product?.status };
   }
 );
 
@@ -74,23 +77,40 @@ const productsSlice = createSlice({
         state.error = action.error.message || 'Failed to fetch products';
       })
       // Create product
+      // New product is automatically persisted to localStorage via store.subscribe()
       .addCase(createProduct.fulfilled, (state, action) => {
         state.items.push(action.payload);
+        // State change triggers saveState() which persists to localStorage
       })
       // Update product
+      // Update is automatically persisted to localStorage via store.subscribe()
       .addCase(updateProduct.fulfilled, (state, action) => {
         const index = state.items.findIndex(p => p.id === action.payload.id);
         if (index !== -1) {
           state.items[index] = action.payload;
+          // State change triggers saveState() which persists to localStorage
         }
       })
-      // Delete product (soft delete)
+      // Delete product
+      // If product is Active → Soft delete (mark as Inactive, keep in array)
+      // If product is Inactive → Hard delete (remove from array completely)
       .addCase(deleteProduct.fulfilled, (state, action) => {
-        const product = state.items.find(p => p.id === action.payload);
-        if (product) {
-          product.status = 'Inactive';
-          product.updatedAt = new Date().toISOString();
+        const { id, currentStatus } = action.payload;
+        const productIndex = state.items.findIndex(p => p.id === id);
+        
+        if (productIndex === -1) return;
+        
+        if (currentStatus === 'Active') {
+          // Soft delete: mark as Inactive
+          state.items[productIndex].status = 'Inactive';
+          state.items[productIndex].updatedAt = new Date().toISOString();
+          // Product stays in array, just marked inactive
+        } else {
+          // Hard delete: remove from array completely
+          state.items.splice(productIndex, 1);
+          // Product is removed from array and localStorage
         }
+        // State change triggers saveState() which persists to localStorage
       });
   },
 });
